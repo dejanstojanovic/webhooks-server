@@ -98,12 +98,15 @@ namespace Webhooks.WorkerService
                                         var configureConsumerMethod = typeof(RegistrationContextExtensions)
                                                         .GetMethods().Single(m => m.Name == nameof(RegistrationContextExtensions.ConfigureConsumer) &&
                                                             m.ContainsGenericParameters &&
-                                                            m.GetParameters().Length == 3)
+                                                            m.GetParameters().Length == 3 &&
+                                                            m.GetParameters()[0].ParameterType == typeof(IReceiveEndpointConfigurator) &&
+                                                            m.GetParameters()[1].ParameterType == typeof(IRegistration) &&
+                                                            m.GetParameters()[2].ParameterType.IsGenericType &&
+                                                            m.GetParameters()[2].ParameterType.GetGenericTypeDefinition() == typeof(Action<>))
                                                         .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(subscription.Event));
 
                                         var configureConsumerMethodResult = configureConsumerMethod.Invoke(null, new object[] { c, busContext, null });
-
-                                        c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>(busContext);
+                                        //c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>(busContext);
 
                                         #endregion
                                     });
