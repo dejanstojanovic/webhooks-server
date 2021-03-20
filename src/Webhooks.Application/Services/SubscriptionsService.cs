@@ -7,6 +7,8 @@ using Webhooks.Domain.Models;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using MassTransit;
+using Webhooks.Domain.Commands;
 
 namespace Webhooks.Application.Services
 {
@@ -16,14 +18,17 @@ namespace Webhooks.Application.Services
         readonly ISubscriptonsRepository _subscriptionsRepositry;
         readonly IUnitOfWork _unitOfWork;
         readonly IMapper _mapper;
+        readonly IBusControl _busControl;
         public SubscriptionsService(
             ISubscriptonsRepository subscriptonsRepository,
             IUnitOfWork unitOfWork,
-            IMapper mapper)
+            IMapper mapper,
+            IBusControl busControl)
         {
             _subscriptionsRepositry = subscriptonsRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _busControl = busControl;
         }
 
         /// <inheritdoc/>
@@ -36,6 +41,8 @@ namespace Webhooks.Application.Services
             var subscription = _mapper.Map<Subscription>(subscriptionModel);
             await _subscriptionsRepositry.AddSubscription(subscription);
             await _unitOfWork.Save();
+
+            await _busControl.Send(new ActivateSubscription(subscriptionModel.Id));
         }
 
         /// <inheritdoc/>
@@ -80,6 +87,7 @@ namespace Webhooks.Application.Services
         {
             await _subscriptionsRepositry.RemoveSubscription(id);
             await _unitOfWork.Save();
+            await _busControl.Send(new DeactivateSubscription(id));
         }
 
     }

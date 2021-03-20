@@ -1,11 +1,9 @@
 ﻿using AutoMapper;
-using Core.Domain.Events;
 using Webhooks.Application.Models;
 using Webhooks.Domain.Models;
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using Webhooks.Common.Helpers;
+using Webhooks.Domain.Commands;
 
 namespace Webhooks.Application.Mappings
 {
@@ -26,6 +24,9 @@ namespace Webhooks.Application.Mappings
                     Key = h.Key,
                     Value = h.Value
                 })));
+
+            CreateMap<SubscriptionModel, ActivateSubscription>();
+            CreateMap<SubscriptionModel, DeactivateSubscription>();
         }
     }
 }

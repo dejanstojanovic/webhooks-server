@@ -23,11 +23,8 @@ namespace Webhooks.Application.Extensions
             .AsImplementedInterfaces()
             .WithScopedLifetime()
            );
-            
-        }
 
-        public static void AddPublishingService(this IServiceCollection services, IConfiguration configuration)
-        {
+            #region Masstransit
             var rabbitmqOptions = new RabbitMqOptions();
             configuration.Bind(nameof(RabbitMqOptions), rabbitmqOptions);
 
@@ -51,7 +48,9 @@ namespace Webhooks.Application.Extensions
 
                 }));
             });
+            #endregion
 
         }
+
     }
 }

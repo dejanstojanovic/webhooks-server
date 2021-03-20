@@ -12,7 +12,7 @@ namespace Webhooks.WorkerService.Consumers
     {
         public async Task Consume(ConsumeContext<T> context)
         {
-            
+            await Task.CompletedTask;
         }
     }
 }

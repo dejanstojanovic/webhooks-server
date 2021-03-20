@@ -3,20 +3,18 @@ using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Webhooks.Application.Extensions;
-using Webhooks.Application.Models;
-using Webhooks.Application.Services;
 using Webhooks.WorkerService.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Core.Domain.Events;
-using MassTransit.ConsumeConfigurators;
-using Core.Domain.Events.Samples;
 using Webhooks.WorkerService.Consumers;
 using MassTransit.ExtensionsDependencyInjectionIntegration;
-using MassTransit.ExtensionsDependencyInjectionIntegration.Registration;
 using Webhooks.Common.Extensions;
+using Webhooks.Data.Extensions;
+using Webhooks.Domain.Models;
+using Webhooks.Data.Repositories;
+using Webhooks.Common.Helpers;
+using Core.Domain.Events.Samples;
 
 namespace Webhooks.WorkerService
 {
@@ -35,7 +33,7 @@ namespace Webhooks.WorkerService
                     var configuration = hostContext.Configuration;
 
                     // Add application options
-                    services.AddApplicationServices(configuration);
+                    services.AddDataRepositories(configuration);
 
                     // Add options
                     services.Configure<DeliveryOptions>(configuration.GetSection(nameof(DeliveryOptions)));
@@ -43,13 +41,13 @@ namespace Webhooks.WorkerService
 
                     RabbitMqOptions rabbitmqOptions = null;
                     DeliveryOptions deliveryOptions = null;
-                    IEnumerable<SubscriptionModel> subscriptions;
+                    IEnumerable<Subscription> subscriptions;
 
                     using (var provider = services.BuildServiceProvider())
                     {
                         rabbitmqOptions = provider.GetService<IOptions<RabbitMqOptions>>().Value;
                         deliveryOptions = provider.GetService<IOptions<DeliveryOptions>>().Value;
-                        subscriptions = provider.GetService<ISubscriptionsService>().GetActiveSubscriptions().Result;
+                        subscriptions = provider.GetService<ISubscriptonsRepository>().GetSubscriptions(true).Result;
                     }
 
 
@@ -57,7 +55,6 @@ namespace Webhooks.WorkerService
 
                     services.AddMassTransit(x =>
                     {
-
                         x.AddBus(busContext => Bus.Factory.CreateUsingRabbitMq(config =>
                         {
                             config.Host(new Uri($"rabbitmq://{rabbitmqOptions.Host}/{rabbitmqOptions.VirtualHost}"), h =>
@@ -70,8 +67,32 @@ namespace Webhooks.WorkerService
 
                             foreach (var subscription in subscriptions)
                             {
+                                var eventType = DomainEventsHelper.GetDomainEventTypes().SingleOrDefault(t => t.FullName == subscription.Event);
+                                if (eventType == null)
+                                    continue; // TODO: Log invalid event
 
-                                #region Add consumer
+                                #region Command consumers
+                                x.AddConsumer<ActivateSubscriptionConsumer>();
+                                x.AddConsumer<DeactivateSubscriptionConsumer>();
+
+                                config.ReceiveEndpoint(queueName: typeof(ActivateSubscriptionConsumer).FullName, c =>
+                                {
+                                    c.Bind(exchangeName: typeof(ActivateSubscriptionConsumer).FullName);
+                                    c.ConfigureConsumer<ActivateSubscriptionConsumer>(busContext);
+                                });
+
+                                config.ReceiveEndpoint(queueName: typeof(DeactivateSubscriptionConsumer).FullName, c =>
+                                {
+                                    c.Bind(exchangeName: typeof(DeactivateSubscriptionConsumer).FullName);
+                                    c.ConfigureConsumer<DeactivateSubscriptionConsumer>(busContext);
+                                });
+                                #endregion
+
+                                #region Event consumers
+
+                                //services.AddScoped(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
+
+                                #region Add event consumers
                                 var addConsumerMethod = x.GetType()
                                                          .GetMethods().Single(m => m.Name == nameof(IServiceCollectionBusConfigurator.AddConsumer) &&
                                                             m.ContainsGenericParameters &&
@@ -79,22 +100,23 @@ namespace Webhooks.WorkerService
                                                             m.GetParameters()[0].ParameterType.IsGenericType &&
                                                             m.GetParameters()[0].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
                                                             )
-                                                         .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(subscription.Event));
+                                                         .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
 
-                                var addConsumerMethodResult = addConsumerMethod.Invoke(x, new object[] { null });
+                                addConsumerMethod.Invoke(x, new object[] { null });
                                 //x.AddConsumer<DomainEventConsumer<OperationCompletedEvent>>();
 
                                 #endregion
 
-                                config.ReceiveEndpoint(queueName: $"{subscription.Id}_{subscription.EventName}", c =>
+                                #region Configure event consumers
+                                config.ReceiveEndpoint(queueName: $"{subscription.Event}_{subscription.Id}", c =>
                                     {
                                         if (hostContext.HostingEnvironment.IsLocal())
                                             c.AutoDelete = true; // Delete when disconnected on local
 
+
+                                        c.Bind(eventType.FullName);
                                         c.UseMessageRetry(r => r.Interval(deliveryOptions.Attempts, TimeSpan.FromSeconds(deliveryOptions.AttemptDelay)));
 
-                                        #region Configure consumer 
-                                        //TODO: Do this better
                                         var configureConsumerMethod = typeof(RegistrationContextExtensions)
                                                         .GetMethods().Single(m => m.Name == nameof(RegistrationContextExtensions.ConfigureConsumer) &&
                                                             m.ContainsGenericParameters &&
@@ -102,22 +124,20 @@ namespace Webhooks.WorkerService
                                                             m.GetParameters()[0].ParameterType == typeof(IReceiveEndpointConfigurator) &&
                                                             m.GetParameters()[1].ParameterType == typeof(IRegistration) &&
                                                             m.GetParameters()[2].ParameterType.IsGenericType &&
-                                                            m.GetParameters()[2].ParameterType.GetGenericTypeDefinition() == typeof(Action<>))
-                                                        .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(subscription.Event));
+                                                            m.GetParameters()[2].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
+                                                            )
+                                                        .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
 
-                                        var configureConsumerMethodResult = configureConsumerMethod.Invoke(null, new object[] { c, busContext, null });
+                                        configureConsumerMethod.Invoke(null, new object[] { c, busContext, null });
                                         //c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>(busContext);
-
-                                        #endregion
                                     });
+                                #endregion
 
-
+                                #endregion
                             }
                         }));
                     });
                     #endregion
-
-
 
                     services.AddHostedService<Worker>();
                 });
