@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(MSBuildThisFileName).xml</DocumentationFile>
+    <Description>$(MSBuildThisFileName)</Description>
+    <ProjectGuid>{36C954EE-DD55-4BE8-84E6-AE5CAC4612ED}</ProjectGuid>
+  </PropertyGroup>
+
+</Project>

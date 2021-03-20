@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(MSBuildThisFileName).xml</DocumentationFile>
+    <Description>$(MSBuildThisFileName)</Description>
+    <ProjectGuid>{8F320286-DBCE-49A1-BCF5-872C705EF8FB}</ProjectGuid>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Scrutor" Version="3.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Core.Domain\Core.Domain.csproj" />
+    <ProjectReference Include="..\Webhooks.Data.Infrastructure\Webhooks.Data.Infrastructure.csproj" />
+    <ProjectReference Include="..\Webhooks.Domain\Webhooks.Domain.csproj" />
+  </ItemGroup>
+
+</Project>
