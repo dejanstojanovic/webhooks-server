@@ -16,6 +16,7 @@ using Core.Domain.Events.Samples;
 using Webhooks.WorkerService.Consumers;
 using MassTransit.ExtensionsDependencyInjectionIntegration;
 using MassTransit.ExtensionsDependencyInjectionIntegration.Registration;
+using Webhooks.Common.Extensions;
 
 namespace Webhooks.WorkerService
 {
@@ -70,27 +71,29 @@ namespace Webhooks.WorkerService
                             foreach (var subscription in subscriptions)
                             {
 
-                                #region Attempt 
-                                //TODO: Do this better
+                                #region Add consumer
                                 var addConsumerMethod = x.GetType()
                                                          .GetMethods().Single(m => m.Name == nameof(IServiceCollectionBusConfigurator.AddConsumer) &&
                                                             m.ContainsGenericParameters &&
-                                                            m.GetParameters().Length == 1)
+                                                            m.GetParameters().Length == 1 &&
+                                                            m.GetParameters()[0].ParameterType.IsGenericType &&
+                                                            m.GetParameters()[0].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
+                                                            )
                                                          .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(subscription.Event));
 
                                 var addConsumerMethodResult = addConsumerMethod.Invoke(x, new object[] { null });
-
                                 //x.AddConsumer<DomainEventConsumer<OperationCompletedEvent>>();
 
                                 #endregion
 
                                 config.ReceiveEndpoint(queueName: $"{subscription.Id}_{subscription.EventName}", c =>
                                     {
-                                        // TODO: remove after debug
-                                        c.AutoDelete = true;
+                                        if (hostContext.HostingEnvironment.IsLocal())
+                                            c.AutoDelete = true; // Delete when disconnected on local
+
                                         c.UseMessageRetry(r => r.Interval(deliveryOptions.Attempts, TimeSpan.FromSeconds(deliveryOptions.AttemptDelay)));
 
-                                        #region Attempt 
+                                        #region Configure consumer 
                                         //TODO: Do this better
                                         var configureConsumerMethod = typeof(RegistrationContextExtensions)
                                                         .GetMethods().Single(m => m.Name == nameof(RegistrationContextExtensions.ConfigureConsumer) &&
@@ -100,7 +103,7 @@ namespace Webhooks.WorkerService
 
                                         var configureConsumerMethodResult = configureConsumerMethod.Invoke(null, new object[] { c, busContext, null });
 
-                                        //c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>(busContext);
+                                        c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>(busContext);
 
                                         #endregion
                                     });
