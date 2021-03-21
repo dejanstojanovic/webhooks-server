@@ -64,18 +64,16 @@ namespace Webhooks.WorkerService
                                 h.Password(rabbitmqOptions.Password);
                             });
 
-                            config.UseDelayedExchangeMessageScheduler();
-
                             #region Command consumers
                             x.AddConsumer<ActivateSubscriptionConsumer, ActivateSubscriptionConsumerDefinition>();
                             //x.AddConsumer<DeactivateSubscriptionConsumer, DeactivateSubscriptionConsumerDefinition>();
 
-                            //config.ReceiveEndpoint(queueName: typeof(ActivateSubscription).FullName, c =>
-                            //{
-                            //    //c.Bind(exchangeName: typeof(ActivateSubscription).FullName);
-                            //    c.ConfigureConsumeTopology = false;
-                            //    c.ConfigureConsumer<ActivateSubscriptionConsumer>(busContext);
-                            //});
+                            config.ReceiveEndpoint(queueName: typeof(ActivateSubscription).FullName, c =>
+                            {
+                                c.ConfigureConsumeTopology = false;
+                                //c.Bind(exchangeName: typeof(ActivateSubscription).FullName);
+                                c.ConfigureConsumer<ActivateSubscriptionConsumer>(busContext);
+                            });
 
                             //config.ReceiveEndpoint(queueName: typeof(DeactivateSubscriptionConsumer).FullName, c =>
                             //{
@@ -146,7 +144,7 @@ namespace Webhooks.WorkerService
                                 #endregion
                             }
 
-                            config.ConfigureEndpoints(busContext);
+                            //config.ConfigureEndpoints(busContext);
 
                         }));
                     });

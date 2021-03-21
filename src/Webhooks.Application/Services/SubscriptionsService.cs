@@ -42,7 +42,7 @@ namespace Webhooks.Application.Services
             var subscription = _mapper.Map<Subscription>(subscriptionModel);
             await _subscriptionsRepositry.AddSubscription(subscription);
 
-            var endpoint = await _bus.GetSendEndpoint(new Uri($"queue:{typeof(ActivateSubscription).Name}"));
+            var endpoint = await _bus.GetSendEndpoint(new Uri($"queue:{typeof(ActivateSubscription).FullName}"));
             await endpoint.Send(new ActivateSubscription(subscriptionModel.Id));
             //await _bus.Send(new ActivateSubscription(subscriptionModel.Id));
 

@@ -31,7 +31,7 @@ namespace Webhooks.Application.Extensions
 
             services.AddMassTransit(x =>
             {
-                x.AddRequestClient<ActivateSubscription>(new Uri($"queue:{typeof(ActivateSubscription).Name}"));
+                x.AddRequestClient<ActivateSubscription>(new Uri($"queue:{typeof(ActivateSubscription).FullName}"));
 
                 x.AddBus(busContext => Bus.Factory.CreateUsingRabbitMq(config =>
                 {
