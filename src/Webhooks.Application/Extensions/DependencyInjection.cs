@@ -8,6 +8,8 @@ using System;
 using Core.Domain.Events;
 using Webhooks.Domain.Commands;
 using Webhooks.Common.Helpers;
+using MassTransit.Topology;
+using Webhooks.Application.Formatters;
 
 namespace Webhooks.Application.Extensions
 {
@@ -35,11 +37,6 @@ namespace Webhooks.Application.Extensions
                 x.AddRequestClient<ActivateSubscription>(new Uri($"queue:{typeof(ActivateSubscription).FullName}"));
                 x.AddRequestClient<DeactivateSubscription>(new Uri($"queue:{typeof(DeactivateSubscription).FullName}"));
 
-                foreach(var @event in DomainEventsHelper.GetDomainEventTypes())
-                {
-                    x.AddRequestClient(@event, new Uri($"exchange:{@event.FullName}"));
-                }
-
 
                 x.AddBus(busContext => Bus.Factory.CreateUsingRabbitMq(config =>
                 {
@@ -51,6 +48,11 @@ namespace Webhooks.Application.Extensions
                         h.Username(rabbitmqOptions.Username);
                         h.Password(rabbitmqOptions.Password);
                     });
+
+                    foreach (var @event in DomainEventsHelper.GetDomainEventTypes())
+                    {
+                        config.MessageTopology.SetEntityNameFormatter(new TypeFullNameEntityNameFormatter());
+                    }
 
                     config.Publish<IDomainEvent>(c =>
                     {
