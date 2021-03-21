@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using MassTransit;
 using Webhooks.Domain.Commands;
+using Webhooks.Common.Extensions;
 
 namespace Webhooks.Application.Services
 {
@@ -44,7 +45,7 @@ namespace Webhooks.Application.Services
             var subscription = _mapper.Map<Subscription>(subscriptionModel);
             await _subscriptionsRepositry.AddSubscription(subscription);
 
-            var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"exchange:{typeof(ActivateSubscription).FullName}"));
+            var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"exchange:{typeof(ActivateSubscription).GetEndpointName()}"));
             await endpoint.Send(new ActivateSubscription(subscriptionModel.Id));
 
             await _unitOfWork.Save();
@@ -93,7 +94,7 @@ namespace Webhooks.Application.Services
             await _subscriptionsRepositry.RemoveSubscription(id);
             await _unitOfWork.Save();
 
-            var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"exchange:{typeof(DeactivateSubscription).FullName}"));
+            var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"exchange:{typeof(DeactivateSubscription).GetEndpointName()}"));
             await endpoint.Send(new DeactivateSubscription(id));
 
         }

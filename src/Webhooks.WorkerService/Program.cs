@@ -57,6 +57,9 @@ namespace Webhooks.WorkerService
                     {
                         x.AddBus(busContext => Bus.Factory.CreateUsingRabbitMq(config =>
                         {
+                            //if (hostContext.HostingEnvironment.IsLocal())
+                            config.AutoDelete = true; // Delete when disconnected on local
+
                             config.Host(new Uri($"rabbitmq://{rabbitmqOptions.Host}/{rabbitmqOptions.VirtualHost}"), h =>
                             {
                                 h.Username(rabbitmqOptions.Username);
@@ -77,13 +80,13 @@ namespace Webhooks.WorkerService
 
                                 config.ReceiveEndpoint(queueName: typeof(ActivateSubscriptionConsumer).FullName, c =>
                                 {
-                                    c.Bind(exchangeName: typeof(ActivateSubscriptionConsumer).FullName);
+                                    c.Bind(exchangeName: typeof(DeactivateSubscriptionConsumer).GetEndpointName());
                                     c.ConfigureConsumer<ActivateSubscriptionConsumer>(busContext);
                                 });
 
                                 config.ReceiveEndpoint(queueName: typeof(DeactivateSubscriptionConsumer).FullName, c =>
                                 {
-                                    c.Bind(exchangeName: typeof(DeactivateSubscriptionConsumer).FullName);
+                                    c.Bind(exchangeName: typeof(DeactivateSubscriptionConsumer).GetEndpointName());
                                     c.ConfigureConsumer<DeactivateSubscriptionConsumer>(busContext);
                                 });
                                 #endregion
@@ -110,11 +113,7 @@ namespace Webhooks.WorkerService
                                 #region Configure event consumers
                                 config.ReceiveEndpoint(queueName: $"{subscription.Event}_{subscription.Id}", c =>
                                     {
-                                        if (hostContext.HostingEnvironment.IsLocal())
-                                            c.AutoDelete = true; // Delete when disconnected on local
-
-
-                                        c.Bind(eventType.FullName);
+                                        c.Bind(eventType.GetEndpointName());
                                         c.UseMessageRetry(r => r.Interval(deliveryOptions.Attempts, TimeSpan.FromSeconds(deliveryOptions.AttemptDelay)));
 
                                         var configureConsumerMethod = typeof(RegistrationContextExtensions)
