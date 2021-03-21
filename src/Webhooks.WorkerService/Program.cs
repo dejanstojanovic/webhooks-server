@@ -132,14 +132,19 @@ namespace Webhooks.WorkerService
                                     });
                                 #endregion
 
-                                //services.AddScoped<ActivateSubscriptionConsumer>();
-
                                 #endregion
+
                             }
 
                         }));
                     });
                     #endregion
+
+                    foreach(var @event in DomainEventsHelper.GetDomainEventTypes())
+                    {
+                        services.AddScoped(typeof(DomainEventConsumer<>).MakeGenericType(@event));
+                    }
+
 
                     services.AddScoped<ActivateSubscriptionConsumer>();
                     services.AddScoped<DeactivateSubscriptionConsumer>();
