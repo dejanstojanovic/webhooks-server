@@ -6,6 +6,7 @@ using Webhooks.Data.Extensions;
 using MassTransit;
 using System;
 using Core.Domain.Events;
+using Webhooks.Domain.Commands;
 
 namespace Webhooks.Application.Extensions
 {
@@ -30,6 +31,8 @@ namespace Webhooks.Application.Extensions
 
             services.AddMassTransit(x =>
             {
+                x.AddRequestClient<ActivateSubscription>(new Uri($"queue:{typeof(ActivateSubscription).Name}"));
+
                 x.AddBus(busContext => Bus.Factory.CreateUsingRabbitMq(config =>
                 {
                     // NOTE: Generates uri with rabbitmqs instead rabbitmq
@@ -45,7 +48,6 @@ namespace Webhooks.Application.Extensions
                     {
                         c.Exclude = true;
                     });
-
 
                 }));
             });

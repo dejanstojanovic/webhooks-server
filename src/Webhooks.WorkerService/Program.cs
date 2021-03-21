@@ -72,7 +72,7 @@ namespace Webhooks.WorkerService
 
                             //config.ReceiveEndpoint(queueName: typeof(ActivateSubscription).FullName, c =>
                             //{
-                            //    c.Bind(exchangeName: typeof(ActivateSubscription).FullName);
+                            //    //c.Bind(exchangeName: typeof(ActivateSubscription).FullName);
                             //    c.ConfigureConsumeTopology = false;
                             //    c.ConfigureConsumer<ActivateSubscriptionConsumer>(busContext);
                             //});
