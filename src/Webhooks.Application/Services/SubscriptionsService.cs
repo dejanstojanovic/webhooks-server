@@ -19,16 +19,19 @@ namespace Webhooks.Application.Services
         readonly IUnitOfWork _unitOfWork;
         readonly IMapper _mapper;
         readonly IBusControl _busControl;
+        readonly ISendEndpointProvider _sendEndpointProvider;
         public SubscriptionsService(
             ISubscriptonsRepository subscriptonsRepository,
             IUnitOfWork unitOfWork,
             IMapper mapper,
+            ISendEndpointProvider sendEndpointProvider,
             IBusControl busControl)
         {
             _subscriptionsRepositry = subscriptonsRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _busControl = busControl;
+            _sendEndpointProvider = sendEndpointProvider;
         }
 
         /// <inheritdoc/>
@@ -40,9 +43,11 @@ namespace Webhooks.Application.Services
 
             var subscription = _mapper.Map<Subscription>(subscriptionModel);
             await _subscriptionsRepositry.AddSubscription(subscription);
-            await _unitOfWork.Save();
 
-            await _busControl.Send(new ActivateSubscription(subscriptionModel.Id));
+            var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"exchange:{typeof(ActivateSubscription).FullName}"));
+            await endpoint.Send(new ActivateSubscription(subscriptionModel.Id));
+
+            await _unitOfWork.Save();
         }
 
         /// <inheritdoc/>
@@ -87,7 +92,10 @@ namespace Webhooks.Application.Services
         {
             await _subscriptionsRepositry.RemoveSubscription(id);
             await _unitOfWork.Save();
-            await _busControl.Send(new DeactivateSubscription(id));
+
+            var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"exchange:{typeof(DeactivateSubscription).FullName}"));
+            await endpoint.Send(new DeactivateSubscription(id));
+
         }
 
     }
