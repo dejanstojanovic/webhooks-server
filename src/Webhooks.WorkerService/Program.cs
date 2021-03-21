@@ -15,6 +15,7 @@ using Webhooks.Domain.Models;
 using Webhooks.Data.Repositories;
 using Webhooks.Common.Helpers;
 using Core.Domain.Events.Samples;
+using Webhooks.Domain.Commands;
 
 namespace Webhooks.WorkerService
 {
@@ -67,11 +68,12 @@ namespace Webhooks.WorkerService
 
                             #region Command consumers
                             x.AddConsumer<ActivateSubscriptionConsumer, ActivateSubscriptionConsumerDefinition>();
-                            x.AddConsumer<DeactivateSubscriptionConsumer, DeactivateSubscriptionConsumerDefinition>();
+                            //x.AddConsumer<DeactivateSubscriptionConsumer, DeactivateSubscriptionConsumerDefinition>();
 
-                            //config.ReceiveEndpoint(queueName: typeof(ActivateSubscriptionConsumer).FullName, c =>
+                            //config.ReceiveEndpoint(queueName: typeof(ActivateSubscription).FullName, c =>
                             //{
-                            //    //c.Bind(exchangeName: typeof(DeactivateSubscriptionConsumer).GetEndpointName());
+                            //    c.Bind(exchangeName: typeof(ActivateSubscription).FullName);
+                            //    c.ConfigureConsumeTopology = false;
                             //    c.ConfigureConsumer<ActivateSubscriptionConsumer>(busContext);
                             //});
 
@@ -92,17 +94,30 @@ namespace Webhooks.WorkerService
                                 #region Event consumers
 
                                 #region Add event consumers
-                                var addConsumerMethod = x.GetType()
-                                                         .GetMethods().Single(m => m.Name == nameof(IServiceCollectionBusConfigurator.AddConsumer) &&
-                                                            m.ContainsGenericParameters &&
-                                                            m.GetParameters().Length == 1 &&
-                                                            m.GetParameters()[0].ParameterType.IsGenericType &&
-                                                            m.GetParameters()[0].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
-                                                            )
-                                                         .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
-
+                                //var addConsumerMethod = x.GetType()
+                                //                         .GetMethods().Single(m => m.Name == nameof(IServiceCollectionBusConfigurator.AddConsumer) &&
+                                //                            m.ContainsGenericParameters &&
+                                //                            m.GetParameters().Length == 1 &&
+                                //                            m.GetParameters()[0].ParameterType.IsGenericType &&
+                                //                            m.GetParameters()[0].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
+                                //                            )
+                                //                         .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
                                 //addConsumerMethod.Invoke(x, new object[] { null });
                                 //x.AddConsumer<DomainEventConsumer<OperationCompletedEvent>>();
+
+
+                                //var addConsumerMethod = x.GetType()
+                                //     .GetMethods().Single(m => m.Name == nameof(IServiceCollectionBusConfigurator.AddConsumer) &&
+                                //        m.ContainsGenericParameters &&
+                                //        m.GetParameters().Length == 2 &&
+                                //        !m.GetParameters()[0].ParameterType.IsGenericType &&
+                                //        m.GetParameters()[1].ParameterType.IsGenericType &&
+                                //        m.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
+                                //        )
+                                //     .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType), typeof(DomainEventConsumerDefinition<>).MakeGenericType());
+
+
+                                //x.AddConsumer<DomainEventConsumer<OperationCompletedEvent>, DomainEventConsumerDefinition<OperationCompletedEvent>>();
 
                                 #endregion
 

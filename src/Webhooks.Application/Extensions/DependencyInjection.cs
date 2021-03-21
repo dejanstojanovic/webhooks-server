@@ -32,9 +32,6 @@ namespace Webhooks.Application.Extensions
             {
                 x.AddBus(busContext => Bus.Factory.CreateUsingRabbitMq(config =>
                 {
-                    //if (busContext.HostingEnvironment.IsLocal())
-                    config.AutoDelete = true; // Delete when disconnected on local
-
                     // NOTE: Generates uri with rabbitmqs instead rabbitmq
                     //config.Host(host: rabbitmqOptions.Host, port: rabbitmqOptions.Port, virtualHost: rabbitmqOptions.VirtualHost, h =>
 
@@ -48,6 +45,7 @@ namespace Webhooks.Application.Extensions
                     {
                         c.Exclude = true;
                     });
+
 
                 }));
             });
