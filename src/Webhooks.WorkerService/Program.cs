@@ -65,21 +65,20 @@ namespace Webhooks.WorkerService
                             });
 
                             #region Command consumers
-                            x.AddConsumer<ActivateSubscriptionConsumer, ActivateSubscriptionConsumerDefinition>();
-                            //x.AddConsumer<DeactivateSubscriptionConsumer, DeactivateSubscriptionConsumerDefinition>();
+                            x.AddConsumer<ActivateSubscriptionConsumer>();
+                            x.AddConsumer<DeactivateSubscriptionConsumer>();
 
                             config.ReceiveEndpoint(queueName: typeof(ActivateSubscription).FullName, c =>
                             {
                                 c.ConfigureConsumeTopology = false;
-                                //c.Bind(exchangeName: typeof(ActivateSubscription).FullName);
                                 c.ConfigureConsumer<ActivateSubscriptionConsumer>(busContext);
                             });
 
-                            //config.ReceiveEndpoint(queueName: typeof(DeactivateSubscriptionConsumer).FullName, c =>
-                            //{
-                            //    //c.Bind(exchangeName: typeof(DeactivateSubscriptionConsumer).GetEndpointName());
-                            //    c.ConfigureConsumer<DeactivateSubscriptionConsumer>(busContext);
-                            //});
+                            config.ReceiveEndpoint(queueName: typeof(DeactivateSubscription).FullName, c =>
+                            {
+                                c.ConfigureConsumeTopology = false;
+                                c.ConfigureConsumer<DeactivateSubscriptionConsumer>(busContext);
+                            });
                             #endregion
 
 
@@ -149,6 +148,9 @@ namespace Webhooks.WorkerService
                         }));
                     });
                     #endregion
+
+                    services.AddScoped<ActivateSubscriptionConsumer>();
+                    services.AddScoped<DeactivateSubscriptionConsumer>();
 
                     services.AddHostedService<Worker>();
                 });

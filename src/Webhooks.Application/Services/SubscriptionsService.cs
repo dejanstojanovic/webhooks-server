@@ -44,9 +44,8 @@ namespace Webhooks.Application.Services
 
             var endpoint = await _bus.GetSendEndpoint(new Uri($"queue:{typeof(ActivateSubscription).FullName}"));
             await endpoint.Send(new ActivateSubscription(subscriptionModel.Id));
-            //await _bus.Send(new ActivateSubscription(subscriptionModel.Id));
 
-            await _unitOfWork.Save();
+            //await _unitOfWork.Save();
         }
 
         /// <inheritdoc/>

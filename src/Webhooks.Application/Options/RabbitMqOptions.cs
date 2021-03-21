@@ -10,7 +10,6 @@ namespace Webhooks.Application.Options
     {
         public String Host { get; set; }
         public String VirtualHost { get; set; }
-        public ushort Port { get; set; }
         public String Username { get; set; }
         public String Password { get; set; }
         public int ConcurrentMessages { get; set; }

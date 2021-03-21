@@ -15,11 +15,4 @@ namespace Webhooks.WorkerService.Consumers
         }
     }
 
-    public class ActivateSubscriptionConsumerDefinition : ConsumerDefinition<ActivateSubscriptionConsumer>
-    {
-        protected override void ConfigureConsumer(IReceiveEndpointConfigurator endpointConfigurator, IConsumerConfigurator<ActivateSubscriptionConsumer> consumerConfigurator)
-        {
-            endpointConfigurator.ConfigureConsumeTopology = false;
-        }
-    }
 }
