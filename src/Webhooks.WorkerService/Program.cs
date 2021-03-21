@@ -93,8 +93,6 @@ namespace Webhooks.WorkerService
 
                                 #region Event consumers
 
-                                //services.AddScoped(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
-
                                 #region Add event consumers
                                 var addConsumerMethod = x.GetType()
                                                          .GetMethods().Single(m => m.Name == nameof(IServiceCollectionBusConfigurator.AddConsumer) &&
@@ -105,7 +103,7 @@ namespace Webhooks.WorkerService
                                                             )
                                                          .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
 
-                                addConsumerMethod.Invoke(x, new object[] { null });
+                                //addConsumerMethod.Invoke(x, new object[] { null });
                                 //x.AddConsumer<DomainEventConsumer<OperationCompletedEvent>>();
 
                                 #endregion
@@ -127,7 +125,7 @@ namespace Webhooks.WorkerService
                                                             )
                                                         .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
 
-                                        configureConsumerMethod.Invoke(null, new object[] { c, busContext, null });
+                                        //configureConsumerMethod.Invoke(null, new object[] { c, busContext, null });
                                         //c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>(busContext);
                                     });
                                 #endregion
