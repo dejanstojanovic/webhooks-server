@@ -65,20 +65,21 @@ namespace Webhooks.WorkerService
                             });
 
                             #region Command consumers
+                           
                             x.AddConsumer<ActivateSubscriptionConsumer>();
-                            x.AddConsumer<DeactivateSubscriptionConsumer>();
-
                             config.ReceiveEndpoint(queueName: typeof(ActivateSubscription).FullName, c =>
                             {
                                 c.ConfigureConsumeTopology = false;
                                 c.ConfigureConsumer<ActivateSubscriptionConsumer>(busContext);
                             });
 
+                            x.AddConsumer<DeactivateSubscriptionConsumer>();
                             config.ReceiveEndpoint(queueName: typeof(DeactivateSubscription).FullName, c =>
                             {
                                 c.ConfigureConsumeTopology = false;
                                 c.ConfigureConsumer<DeactivateSubscriptionConsumer>(busContext);
                             });
+
                             #endregion
 
 
@@ -91,59 +92,50 @@ namespace Webhooks.WorkerService
                                 #region Event consumers
 
                                 #region Add event consumers
-                                //var addConsumerMethod = x.GetType()
-                                //                         .GetMethods().Single(m => m.Name == nameof(IServiceCollectionBusConfigurator.AddConsumer) &&
-                                //                            m.ContainsGenericParameters &&
-                                //                            m.GetParameters().Length == 1 &&
-                                //                            m.GetParameters()[0].ParameterType.IsGenericType &&
-                                //                            m.GetParameters()[0].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
-                                //                            )
-                                //                         .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
-                                //addConsumerMethod.Invoke(x, new object[] { null });
+                                var addConsumerMethod = x.GetType()
+                                                         .GetMethods().Single(m => m.Name == nameof(IServiceCollectionBusConfigurator.AddConsumer) &&
+                                                            m.ContainsGenericParameters &&
+                                                            m.GetParameters().Length == 1 &&
+                                                            m.GetParameters()[0].ParameterType.IsGenericType &&
+                                                            m.GetParameters()[0].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
+                                                            )
+                                                         .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
+                                addConsumerMethod.Invoke(x, new object[] { null });
+
+                                //x.AddConsumer(eventType);
                                 //x.AddConsumer<DomainEventConsumer<OperationCompletedEvent>>();
-
-
-                                //var addConsumerMethod = x.GetType()
-                                //     .GetMethods().Single(m => m.Name == nameof(IServiceCollectionBusConfigurator.AddConsumer) &&
-                                //        m.ContainsGenericParameters &&
-                                //        m.GetParameters().Length == 2 &&
-                                //        !m.GetParameters()[0].ParameterType.IsGenericType &&
-                                //        m.GetParameters()[1].ParameterType.IsGenericType &&
-                                //        m.GetParameters()[1].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
-                                //        )
-                                //     .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType), typeof(DomainEventConsumerDefinition<>).MakeGenericType());
-
-
-                                //x.AddConsumer<DomainEventConsumer<OperationCompletedEvent>, DomainEventConsumerDefinition<OperationCompletedEvent>>();
 
                                 #endregion
 
                                 #region Configure event consumers
-                                //config.ReceiveEndpoint(queueName: $"{subscription.Event}_{subscription.Id}", c =>
-                                //    {
-                                //        //c.Bind(eventType.GetEndpointName());
-                                //        c.UseMessageRetry(r => r.Interval(deliveryOptions.Attempts, TimeSpan.FromSeconds(deliveryOptions.AttemptDelay)));
+                                config.ReceiveEndpoint(queueName: $"{subscription.Event}_{subscription.Id}", c =>
+                                    {
+                                        
+                                        c.Bind(exchangeName: eventType.FullName);
+                                        c.UseMessageRetry(r => r.Interval(deliveryOptions.Attempts, TimeSpan.FromSeconds(deliveryOptions.AttemptDelay)));
+                                        c.ConfigureConsumeTopology = false;
+                                        var configureConsumerMethod = typeof(RegistrationContextExtensions)
+                                                        .GetMethods().Single(m => m.Name == nameof(RegistrationContextExtensions.ConfigureConsumer) &&
+                                                            m.ContainsGenericParameters &&
+                                                            m.GetParameters().Length == 3 &&
+                                                            m.GetParameters()[0].ParameterType == typeof(IReceiveEndpointConfigurator) &&
+                                                            m.GetParameters()[1].ParameterType == typeof(IRegistration) &&
+                                                            m.GetParameters()[2].ParameterType.IsGenericType &&
+                                                            m.GetParameters()[2].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
+                                                            )
+                                                        .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
 
-                                //        var configureConsumerMethod = typeof(RegistrationContextExtensions)
-                                //                        .GetMethods().Single(m => m.Name == nameof(RegistrationContextExtensions.ConfigureConsumer) &&
-                                //                            m.ContainsGenericParameters &&
-                                //                            m.GetParameters().Length == 3 &&
-                                //                            m.GetParameters()[0].ParameterType == typeof(IReceiveEndpointConfigurator) &&
-                                //                            m.GetParameters()[1].ParameterType == typeof(IRegistration) &&
-                                //                            m.GetParameters()[2].ParameterType.IsGenericType &&
-                                //                            m.GetParameters()[2].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
-                                //                            )
-                                //                        .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
+                                        configureConsumerMethod.Invoke(null, new object[] { c, busContext, null });
 
-                                //        //configureConsumerMethod.Invoke(null, new object[] { c, busContext, null });
-                                //        //c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>(busContext);
-                                //    });
+                                        //c.ConfigureConsumer(busContext, eventType);
+                                        //c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>(busContext);
+                                    });
                                 #endregion
+
+                                //services.AddScoped<ActivateSubscriptionConsumer>();
 
                                 #endregion
                             }
-
-                            //config.ConfigureEndpoints(busContext);
 
                         }));
                     });

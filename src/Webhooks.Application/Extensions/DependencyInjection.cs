@@ -7,6 +7,7 @@ using MassTransit;
 using System;
 using Core.Domain.Events;
 using Webhooks.Domain.Commands;
+using Webhooks.Common.Helpers;
 
 namespace Webhooks.Application.Extensions
 {
@@ -33,6 +34,12 @@ namespace Webhooks.Application.Extensions
             {
                 x.AddRequestClient<ActivateSubscription>(new Uri($"queue:{typeof(ActivateSubscription).FullName}"));
                 x.AddRequestClient<DeactivateSubscription>(new Uri($"queue:{typeof(DeactivateSubscription).FullName}"));
+
+                foreach(var @event in DomainEventsHelper.GetDomainEventTypes())
+                {
+                    x.AddRequestClient(@event, new Uri($"exchange:{@event.FullName}"));
+                }
+
 
                 x.AddBus(busContext => Bus.Factory.CreateUsingRabbitMq(config =>
                 {

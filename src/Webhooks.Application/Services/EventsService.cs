@@ -13,10 +13,10 @@ namespace Webhooks.Application.Services
     /// <inheritdoc/>
     public class EventsService : IEventsService
     {
-        readonly IBusControl _busControl;
-        public EventsService(IBusControl busControl)
+        readonly IBus _bus;
+        public EventsService(IBus bus)
         {
-            _busControl = busControl;
+            _bus = bus;
         }
 
         /// <inheritdoc/>
@@ -41,7 +41,12 @@ namespace Webhooks.Application.Services
             if (!isValid)
                 throw new ValidationException(validationResult: validationResults.First(), null, null);
 
-            await _busControl.Publish<T>(@event);
+            await _bus.Publish<T>(@event);
+
+            //var endpoint = await _bus.GetSendEndpoint(new Uri($"exchange:{typeof(T).FullName}"));
+            //await endpoint(@event);
+
+            //await _busControl.Publish<T>(@event);
         }
 
     }

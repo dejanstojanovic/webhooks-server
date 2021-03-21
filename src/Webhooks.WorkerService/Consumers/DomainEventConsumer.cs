@@ -13,12 +13,4 @@ namespace Webhooks.WorkerService.Consumers
             await Task.CompletedTask;
         }
     }
-
-    public class DomainEventConsumerDefinition<T> : ConsumerDefinition<DomainEventConsumer<T>> where T: class, IDomainEvent
-    {
-        protected override void ConfigureConsumer(IReceiveEndpointConfigurator endpointConfigurator, IConsumerConfigurator<DomainEventConsumer<T>> consumerConfigurator)
-        {
-            endpointConfigurator.ConfigureConsumeTopology = false;
-        }
-    }
 }

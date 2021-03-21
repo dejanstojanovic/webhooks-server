@@ -1,6 +1,4 @@
 ﻿using MassTransit;
-using MassTransit.ConsumeConfigurators;
-using MassTransit.Definition;
 using System.Threading.Tasks;
 using Webhooks.Domain.Commands;
 
