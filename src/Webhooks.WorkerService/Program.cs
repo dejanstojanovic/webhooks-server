@@ -57,9 +57,6 @@ namespace Webhooks.WorkerService
                     {
                         x.AddBus(busContext => Bus.Factory.CreateUsingRabbitMq(config =>
                         {
-                            //if (hostContext.HostingEnvironment.IsLocal())
-                            config.AutoDelete = true; // Delete when disconnected on local
-
                             config.Host(new Uri($"rabbitmq://{rabbitmqOptions.Host}/{rabbitmqOptions.VirtualHost}"), h =>
                             {
                                 h.Username(rabbitmqOptions.Username);
@@ -68,28 +65,29 @@ namespace Webhooks.WorkerService
 
                             config.UseDelayedExchangeMessageScheduler();
 
+                            #region Command consumers
+                            x.AddConsumer<ActivateSubscriptionConsumer, ActivateSubscriptionConsumerDefinition>();
+                            x.AddConsumer<DeactivateSubscriptionConsumer, DeactivateSubscriptionConsumerDefinition>();
+
+                            //config.ReceiveEndpoint(queueName: typeof(ActivateSubscriptionConsumer).FullName, c =>
+                            //{
+                            //    //c.Bind(exchangeName: typeof(DeactivateSubscriptionConsumer).GetEndpointName());
+                            //    c.ConfigureConsumer<ActivateSubscriptionConsumer>(busContext);
+                            //});
+
+                            //config.ReceiveEndpoint(queueName: typeof(DeactivateSubscriptionConsumer).FullName, c =>
+                            //{
+                            //    //c.Bind(exchangeName: typeof(DeactivateSubscriptionConsumer).GetEndpointName());
+                            //    c.ConfigureConsumer<DeactivateSubscriptionConsumer>(busContext);
+                            //});
+                            #endregion
+
+
                             foreach (var subscription in subscriptions)
                             {
                                 var eventType = DomainEventsHelper.GetDomainEventTypes().SingleOrDefault(t => t.FullName == subscription.Event);
                                 if (eventType == null)
                                     continue; // TODO: Log invalid event
-
-                                #region Command consumers
-                                x.AddConsumer<ActivateSubscriptionConsumer>();
-                                x.AddConsumer<DeactivateSubscriptionConsumer>();
-
-                                config.ReceiveEndpoint(queueName: typeof(ActivateSubscriptionConsumer).FullName, c =>
-                                {
-                                    c.Bind(exchangeName: typeof(DeactivateSubscriptionConsumer).GetEndpointName());
-                                    c.ConfigureConsumer<ActivateSubscriptionConsumer>(busContext);
-                                });
-
-                                config.ReceiveEndpoint(queueName: typeof(DeactivateSubscriptionConsumer).FullName, c =>
-                                {
-                                    c.Bind(exchangeName: typeof(DeactivateSubscriptionConsumer).GetEndpointName());
-                                    c.ConfigureConsumer<DeactivateSubscriptionConsumer>(busContext);
-                                });
-                                #endregion
 
                                 #region Event consumers
 
@@ -109,29 +107,32 @@ namespace Webhooks.WorkerService
                                 #endregion
 
                                 #region Configure event consumers
-                                config.ReceiveEndpoint(queueName: $"{subscription.Event}_{subscription.Id}", c =>
-                                    {
-                                        c.Bind(eventType.GetEndpointName());
-                                        c.UseMessageRetry(r => r.Interval(deliveryOptions.Attempts, TimeSpan.FromSeconds(deliveryOptions.AttemptDelay)));
+                                //config.ReceiveEndpoint(queueName: $"{subscription.Event}_{subscription.Id}", c =>
+                                //    {
+                                //        //c.Bind(eventType.GetEndpointName());
+                                //        c.UseMessageRetry(r => r.Interval(deliveryOptions.Attempts, TimeSpan.FromSeconds(deliveryOptions.AttemptDelay)));
 
-                                        var configureConsumerMethod = typeof(RegistrationContextExtensions)
-                                                        .GetMethods().Single(m => m.Name == nameof(RegistrationContextExtensions.ConfigureConsumer) &&
-                                                            m.ContainsGenericParameters &&
-                                                            m.GetParameters().Length == 3 &&
-                                                            m.GetParameters()[0].ParameterType == typeof(IReceiveEndpointConfigurator) &&
-                                                            m.GetParameters()[1].ParameterType == typeof(IRegistration) &&
-                                                            m.GetParameters()[2].ParameterType.IsGenericType &&
-                                                            m.GetParameters()[2].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
-                                                            )
-                                                        .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
+                                //        var configureConsumerMethod = typeof(RegistrationContextExtensions)
+                                //                        .GetMethods().Single(m => m.Name == nameof(RegistrationContextExtensions.ConfigureConsumer) &&
+                                //                            m.ContainsGenericParameters &&
+                                //                            m.GetParameters().Length == 3 &&
+                                //                            m.GetParameters()[0].ParameterType == typeof(IReceiveEndpointConfigurator) &&
+                                //                            m.GetParameters()[1].ParameterType == typeof(IRegistration) &&
+                                //                            m.GetParameters()[2].ParameterType.IsGenericType &&
+                                //                            m.GetParameters()[2].ParameterType.GetGenericTypeDefinition() == typeof(Action<>)
+                                //                            )
+                                //                        .MakeGenericMethod(typeof(DomainEventConsumer<>).MakeGenericType(eventType));
 
-                                        //configureConsumerMethod.Invoke(null, new object[] { c, busContext, null });
-                                        //c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>(busContext);
-                                    });
+                                //        //configureConsumerMethod.Invoke(null, new object[] { c, busContext, null });
+                                //        //c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>(busContext);
+                                //    });
                                 #endregion
 
                                 #endregion
                             }
+
+                            config.ConfigureEndpoints(busContext);
+
                         }));
                     });
                     #endregion

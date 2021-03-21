@@ -18,21 +18,18 @@ namespace Webhooks.Application.Services
     {
         readonly ISubscriptonsRepository _subscriptionsRepositry;
         readonly IUnitOfWork _unitOfWork;
-        readonly IMapper _mapper;
-        readonly IBusControl _busControl;
-        readonly ISendEndpointProvider _sendEndpointProvider;
+        readonly IMapper _mapper;       
+        readonly IBus _bus;
         public SubscriptionsService(
             ISubscriptonsRepository subscriptonsRepository,
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            ISendEndpointProvider sendEndpointProvider,
-            IBusControl busControl)
+            IBus bus)
         {
             _subscriptionsRepositry = subscriptonsRepository;
             _unitOfWork = unitOfWork;
             _mapper = mapper;
-            _busControl = busControl;
-            _sendEndpointProvider = sendEndpointProvider;
+            _bus = bus;
         }
 
         /// <inheritdoc/>
@@ -45,7 +42,7 @@ namespace Webhooks.Application.Services
             var subscription = _mapper.Map<Subscription>(subscriptionModel);
             await _subscriptionsRepositry.AddSubscription(subscription);
 
-            var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"exchange:{typeof(ActivateSubscription).GetEndpointName()}"));
+            var endpoint = await _bus.GetSendEndpoint(new Uri($"queue:{typeof(ActivateSubscription).FullName}"));
             await endpoint.Send(new ActivateSubscription(subscriptionModel.Id));
 
             await _unitOfWork.Save();
@@ -94,7 +91,7 @@ namespace Webhooks.Application.Services
             await _subscriptionsRepositry.RemoveSubscription(id);
             await _unitOfWork.Save();
 
-            var endpoint = await _sendEndpointProvider.GetSendEndpoint(new Uri($"exchange:{typeof(DeactivateSubscription).GetEndpointName()}"));
+            var endpoint = await _bus.GetSendEndpoint(new Uri($"queue:{typeof(DeactivateSubscription).FullName}"));
             await endpoint.Send(new DeactivateSubscription(id));
 
         }
