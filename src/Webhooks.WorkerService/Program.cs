@@ -16,6 +16,7 @@ using Webhooks.Common.Helpers;
 using Webhooks.Domain.Commands;
 using Webhooks.Common.Options;
 using Webhooks.WorkerService.Constants;
+using Serilog;
 
 namespace Webhooks.WorkerService
 {
@@ -32,6 +33,12 @@ namespace Webhooks.WorkerService
                 .ConfigureServices((hostContext, services) =>
                 {
                     var configuration = hostContext.Configuration;
+
+                    // Add logging
+                    Log.Logger = new LoggerConfiguration()
+                       .ReadFrom.Configuration(configuration)
+                       .CreateLogger();
+                    services.AddLogging(c => c.AddSerilog());
 
                     // Add application options
                     services.AddDataRepositories(configuration);
@@ -51,7 +58,7 @@ namespace Webhooks.WorkerService
                         subscriptions = provider.GetService<ISubscriptonsRepository>().GetSubscriptions(true).Result;
                     }
 
-                    #region Masstransit config
+                    #region MassTransit config
                     services.AddMassTransit(x =>
                     {
                         x.AddBus(busContext => Bus.Factory.CreateUsingRabbitMq(config =>
@@ -140,6 +147,7 @@ namespace Webhooks.WorkerService
 
                     foreach (var @event in DomainEventsHelper.GetDomainEventTypes())
                         services.AddScoped(typeof(DomainEventConsumer<>).MakeGenericType(@event));
+
                     #endregion
 
                     #region HttpClientFactory config

@@ -1,5 +1,6 @@
 ﻿using Core.Domain.Events;
 using MassTransit;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
@@ -15,27 +16,32 @@ namespace Webhooks.WorkerService.Consumers
     {
         readonly ISubscriptonsRepository _subscriptionsRepository;
         readonly IHttpClientFactory _httpClientFactory;
+        readonly ILogger<DomainEventConsumer<T>> _logger;
 
         public DomainEventConsumer(
             ISubscriptonsRepository subscriptonsRepository,
-            IHttpClientFactory httpClientFactory)
+            IHttpClientFactory httpClientFactory,
+            ILogger<DomainEventConsumer<T>> logger)
         {
             _subscriptionsRepository = subscriptonsRepository;
             _httpClientFactory = httpClientFactory;
+            _logger = logger;
         }
 
         public async Task Consume(ConsumeContext<T> context)
         {
             var subscriptionIdParsed = context.ReceiveContext.InputAddress.Segments.Last().Replace($"{typeof(T).FullName}_", string.Empty, System.StringComparison.InvariantCultureIgnoreCase);
             if (!Guid.TryParse(subscriptionIdParsed, out Guid subscriptionId) || subscriptionId == Guid.Empty)
-                throw new Exception("Failed to parse ID");
+                throw new ArgumentException("Failed to parse ID");
 
             var subscription = await _subscriptionsRepository.GetSubscription(subscriptionId);
             if (subscription == null)
-                throw new Exception($"Cannot find subscription {subscriptionId}");
+                throw new ArgumentException($"Cannot find subscription {subscriptionId}");
 
             if (!subscription.Active)
-                await Task.CompletedTask; // Not active subscription
+            {
+                _logger.LogWarning($"Subscription {subscriptionId} is not active");
+            }
 
             var client = _httpClientFactory.CreateClient(HttpClientNames.WebhookSubscriptionHttpClient);
             client.DefaultRequestHeaders.Clear();
