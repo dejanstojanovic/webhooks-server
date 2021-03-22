@@ -36,7 +36,14 @@ namespace Webhooks.WorkerService.Consumers
             }
 
             // TODO: Connect new consumer
+			/*
+            _busControl.ConnectReceiveEndpoint(c =>
+            {
+                c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>();
 
+            });
+			*/
+			
             await Task.CompletedTask;
 
         }
