@@ -1,5 +1,7 @@
 ﻿using Core.Domain.Events;
 using MassTransit;
+using MassTransit.ConsumeConfigurators;
+using MassTransit.Definition;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
@@ -54,6 +56,14 @@ namespace Webhooks.WorkerService.Consumers
             if (!response.IsSuccessStatusCode)
                 throw new HttpRequestException($"Unable to POST data for subscription {subscription.Id} to {subscription.Endpoint}, status code {response.StatusCode}");
 
+        }
+    }
+
+    public class DomainEventConsumerDefinition<T> : ConsumerDefinition<DomainEventConsumer<T>> where T : class, IDomainEvent
+    {
+        protected override void ConfigureConsumer(IReceiveEndpointConfigurator endpointConfigurator, IConsumerConfigurator<DomainEventConsumer<T>> consumerConfigurator)
+        {
+            endpointConfigurator.ConfigureConsumeTopology = false;
         }
     }
 }
