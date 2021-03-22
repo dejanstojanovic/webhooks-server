@@ -87,8 +87,6 @@ namespace Webhooks.WorkerService
                                 if (eventType == null)
                                     continue; // TODO: Log invalid event
 
-
-
                                 #region Add event consumers
                                 var addConsumerMethod = x.GetType()
                                                          .GetMethods().Single(m => m.Name == nameof(IServiceCollectionBusConfigurator.AddConsumer) &&

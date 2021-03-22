@@ -19,7 +19,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Core.Domain", "Core.Domain\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Webhooks.WorkerService", "Webhooks.WorkerService\Webhooks.WorkerService.csproj", "{BAB4218A-2F35-4AD3-88F5-AD251B5B6261}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Webhooks.Common", "Webhooks.Common\Webhooks.Common.csproj", "{3777B5CC-0611-4B9F-9EB4-D8B40B8A3AD6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Webhooks.Common", "Webhooks.Common\Webhooks.Common.csproj", "{3777B5CC-0611-4B9F-9EB4-D8B40B8A3AD6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
