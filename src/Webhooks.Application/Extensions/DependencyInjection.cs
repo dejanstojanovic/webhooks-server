@@ -8,9 +8,9 @@ using Core.Domain.Events;
 using Webhooks.Domain.Commands;
 using Webhooks.Common.Helpers;
 using MassTransit.Topology;
-using Webhooks.Application.Formatters;
 using Webhooks.Common.Options;
 using Webhooks.Common.Extensions;
+using Webhooks.Common.Formatters;
 
 namespace Webhooks.Application.Extensions
 {

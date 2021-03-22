@@ -17,6 +17,7 @@ using Webhooks.Domain.Commands;
 using Webhooks.Common.Options;
 using Webhooks.WorkerService.Constants;
 using Serilog;
+using Webhooks.Common.Formatters;
 
 namespace Webhooks.WorkerService
 {
@@ -69,6 +70,9 @@ namespace Webhooks.WorkerService
                                 h.Password(rabbitmqOptions.Password);
                             });
 
+                            foreach (var @event in DomainEventsHelper.GetDomainEventTypes())
+                                config.MessageTopology.SetEntityNameFormatter(new TypeFullNameEntityNameFormatter());
+
                             #region Command consumers
 
                             x.AddConsumer<ActivateSubscriptionConsumer>();
@@ -107,16 +111,15 @@ namespace Webhooks.WorkerService
 
                                 //x.AddConsumer(eventType);
                                 //x.AddConsumer<DomainEventConsumer<OperationCompletedEvent>>();
-
-                                #endregion
+                                #endregion Event consumers
 
                                 #region Configure event consumers
                                 config.ReceiveEndpoint(queueName: $"{subscription.Event}_{subscription.Id}", c =>
                                     {
-
+                                        c.ConfigureConsumeTopology = false;
                                         c.Bind(exchangeName: eventType.FullName);
                                         c.UseMessageRetry(r => r.Interval(deliveryOptions.Attempts, TimeSpan.FromSeconds(deliveryOptions.AttemptDelay)));
-                                        c.ConfigureConsumeTopology = false;
+
                                         var configureConsumerMethod = typeof(RegistrationContextExtensions)
                                                         .GetMethods().Single(m => m.Name == nameof(RegistrationContextExtensions.ConfigureConsumer) &&
                                                             m.ContainsGenericParameters &&
@@ -134,9 +137,6 @@ namespace Webhooks.WorkerService
                                         //c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>(busContext);
                                     });
                                 #endregion
-
-
-
                             }
                             #endregion
                         }));
