@@ -9,13 +9,13 @@ using System.Collections.Generic;
 using System.Linq;
 using Webhooks.WorkerService.Consumers;
 using MassTransit.ExtensionsDependencyInjectionIntegration;
-using Webhooks.Common.Extensions;
 using Webhooks.Data.Extensions;
 using Webhooks.Domain.Models;
 using Webhooks.Data.Repositories;
 using Webhooks.Common.Helpers;
-using Core.Domain.Events.Samples;
 using Webhooks.Domain.Commands;
+using Webhooks.Common.Options;
+using Webhooks.WorkerService.Constants;
 
 namespace Webhooks.WorkerService
 {
@@ -51,21 +51,19 @@ namespace Webhooks.WorkerService
                         subscriptions = provider.GetService<ISubscriptonsRepository>().GetSubscriptions(true).Result;
                     }
 
-
                     #region Masstransit config
-
                     services.AddMassTransit(x =>
                     {
                         x.AddBus(busContext => Bus.Factory.CreateUsingRabbitMq(config =>
                         {
-                            config.Host(new Uri($"rabbitmq://{rabbitmqOptions.Host}/{rabbitmqOptions.VirtualHost}"), h =>
+                            config.Host(rabbitmqOptions.Uri, h =>
                             {
                                 h.Username(rabbitmqOptions.Username);
                                 h.Password(rabbitmqOptions.Password);
                             });
 
                             #region Command consumers
-                           
+
                             x.AddConsumer<ActivateSubscriptionConsumer>();
                             config.ReceiveEndpoint(queueName: typeof(ActivateSubscription).FullName, c =>
                             {
@@ -82,14 +80,14 @@ namespace Webhooks.WorkerService
 
                             #endregion
 
-
+                            #region Event consumers
                             foreach (var subscription in subscriptions)
                             {
                                 var eventType = DomainEventsHelper.GetDomainEventTypes().SingleOrDefault(t => t.FullName == subscription.Event);
                                 if (eventType == null)
                                     continue; // TODO: Log invalid event
 
-                                #region Event consumers
+
 
                                 #region Add event consumers
                                 var addConsumerMethod = x.GetType()
@@ -110,7 +108,7 @@ namespace Webhooks.WorkerService
                                 #region Configure event consumers
                                 config.ReceiveEndpoint(queueName: $"{subscription.Event}_{subscription.Id}", c =>
                                     {
-                                        
+
                                         c.Bind(exchangeName: eventType.FullName);
                                         c.UseMessageRetry(r => r.Interval(deliveryOptions.Attempts, TimeSpan.FromSeconds(deliveryOptions.AttemptDelay)));
                                         c.ConfigureConsumeTopology = false;
@@ -132,22 +130,27 @@ namespace Webhooks.WorkerService
                                     });
                                 #endregion
 
-                                #endregion
+
 
                             }
-
+                            #endregion
                         }));
                     });
-                    #endregion
-
-                    foreach(var @event in DomainEventsHelper.GetDomainEventTypes())
-                    {
-                        services.AddScoped(typeof(DomainEventConsumer<>).MakeGenericType(@event));
-                    }
-
 
                     services.AddScoped<ActivateSubscriptionConsumer>();
                     services.AddScoped<DeactivateSubscriptionConsumer>();
+
+                    foreach (var @event in DomainEventsHelper.GetDomainEventTypes())
+                        services.AddScoped(typeof(DomainEventConsumer<>).MakeGenericType(@event));
+                    #endregion
+
+                    #region HttpClientFactory config
+                    services.AddHttpClient(HttpClientNames.WebhookSubscriptionHttpClient, c =>
+                    {
+                        if (deliveryOptions.Timeout > 0)
+                            c.Timeout = TimeSpan.FromSeconds(deliveryOptions.Timeout);
+                    });
+                    #endregion
 
                     services.AddHostedService<Worker>();
                 });
