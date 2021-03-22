@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Webhooks.Application.Options;
 using Webhooks.Application.Services;
 using Webhooks.Data.Extensions;
 using MassTransit;
@@ -10,6 +9,8 @@ using Webhooks.Domain.Commands;
 using Webhooks.Common.Helpers;
 using MassTransit.Topology;
 using Webhooks.Application.Formatters;
+using Webhooks.Common.Options;
+using Webhooks.Common.Extensions;
 
 namespace Webhooks.Application.Extensions
 {
@@ -34,16 +35,13 @@ namespace Webhooks.Application.Extensions
 
             services.AddMassTransit(x =>
             {
-                x.AddRequestClient<ActivateSubscription>(new Uri($"queue:{typeof(ActivateSubscription).FullName}"));
-                x.AddRequestClient<DeactivateSubscription>(new Uri($"queue:{typeof(DeactivateSubscription).FullName}"));
+                x.AddRequestClient<ActivateSubscription>(typeof(ActivateSubscription).GetQueueAddress());
+                x.AddRequestClient<DeactivateSubscription>(typeof(DeactivateSubscription).GetQueueAddress());
 
 
                 x.AddBus(busContext => Bus.Factory.CreateUsingRabbitMq(config =>
                 {
-                    // NOTE: Generates uri with rabbitmqs instead rabbitmq
-                    //config.Host(host: rabbitmqOptions.Host, port: rabbitmqOptions.Port, virtualHost: rabbitmqOptions.VirtualHost, h =>
-
-                    config.Host(new Uri($"rabbitmq://{rabbitmqOptions.Host}/{rabbitmqOptions.VirtualHost}"), h =>
+                    config.Host(rabbitmqOptions.Uri, h =>
                     {
                         h.Username(rabbitmqOptions.Username);
                         h.Password(rabbitmqOptions.Password);

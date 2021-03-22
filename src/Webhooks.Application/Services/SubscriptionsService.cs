@@ -42,10 +42,10 @@ namespace Webhooks.Application.Services
             var subscription = _mapper.Map<Subscription>(subscriptionModel);
             await _subscriptionsRepositry.AddSubscription(subscription);
 
-            var endpoint = await _bus.GetSendEndpoint(new Uri($"queue:{typeof(ActivateSubscription).FullName}"));
+            var endpoint = await _bus.GetSendEndpoint(typeof(ActivateSubscription).GetQueueAddress());
             await endpoint.Send(new ActivateSubscription(subscriptionModel.Id));
 
-            //await _unitOfWork.Save();
+            await _unitOfWork.Save();
         }
 
         /// <inheritdoc/>
@@ -91,7 +91,7 @@ namespace Webhooks.Application.Services
             await _subscriptionsRepositry.RemoveSubscription(id);
             await _unitOfWork.Save();
 
-            var endpoint = await _bus.GetSendEndpoint(new Uri($"queue:{typeof(DeactivateSubscription).FullName}"));
+            var endpoint = await _bus.GetSendEndpoint(typeof(DeactivateSubscription).GetQueueAddress());
             await endpoint.Send(new DeactivateSubscription(id));
 
         }

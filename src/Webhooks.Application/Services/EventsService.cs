@@ -42,11 +42,6 @@ namespace Webhooks.Application.Services
                 throw new ValidationException(validationResult: validationResults.First(), null, null);
 
             await _bus.Publish<T>(@event);
-
-            //var endpoint = await _bus.GetSendEndpoint(new Uri($"exchange:{typeof(T).FullName}"));
-            //await endpoint(@event);
-
-            //await _busControl.Publish<T>(@event);
         }
 
     }
