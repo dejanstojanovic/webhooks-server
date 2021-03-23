@@ -111,6 +111,7 @@ namespace Webhooks.WorkerService
 
                                 //x.AddConsumer(eventType);
                                 //x.AddConsumer<DomainEventConsumer<OperationCompletedEvent>>();
+                                //x.AddConsumer<DomainEventConsumer<OperationCompletedEvent>, DomainEventConsumerDefinition<OperationCompletedEvent>>();
                                 #endregion Event consumers
 
                                 #region Configure event consumers
