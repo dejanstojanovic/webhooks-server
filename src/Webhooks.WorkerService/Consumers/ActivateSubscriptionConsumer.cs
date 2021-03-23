@@ -27,7 +27,7 @@ namespace Webhooks.WorkerService.Consumers
             var subscription = await _subsriptionsRepository.GetSubscription(context.Message.Id);
 
             if (subscription == null)
-                throw new Exception($"Cannot find subscription {context.Message.Id}");
+                throw new ArgumentException($"Cannot find subscription {context.Message.Id}");
 
             if (!subscription.Active)
             {
@@ -36,13 +36,11 @@ namespace Webhooks.WorkerService.Consumers
             }
 
             // TODO: Connect new consumer
-			/*
-            _busControl.ConnectReceiveEndpoint(c =>
-            {
-                c.ConfigureConsumer<DomainEventConsumer<OperationCompletedEvent>>();
-
-            });
-			*/
+            //_busControl.ConnectReceiveEndpoint(config =>
+            //{
+            //    config.Consumer<DomainEventConsumer<OperationCompletedEvent>>();
+            //});
+			
 			
             await Task.CompletedTask;
 

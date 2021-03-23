@@ -43,6 +43,7 @@ namespace Webhooks.WorkerService.Consumers
             if (!subscription.Active)
             {
                 _logger.LogWarning($"Subscription {subscriptionId} is not active");
+                return;
             }
 
             var client = _httpClientFactory.CreateClient(HttpClientNames.WebhookSubscriptionHttpClient);
